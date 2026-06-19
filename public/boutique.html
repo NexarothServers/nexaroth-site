@@ -1,0 +1,74 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Boutique</title>
+  <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+  <nav class="navbar">
+    <div class="container">
+      <h1 class="logo">WebSite</h1>
+      <ul class="nav-links">
+        <li><a href="index.html">Accueil</a></li>
+        <li><a href="vote.html">Vote</a></li>
+        <li><a href="boutique.html">Boutique</a></li>
+        <li><a href="panier.html">🛒 Panier</a></li>
+      </ul>
+    </div>
+  </nav>
+
+  <section class="boutique-section">
+    <div class="container">
+      <h2>🛍️ Boutique</h2>
+      <div id="produits" class="produits-grid"></div>
+    </div>
+  </section>
+
+  <script>
+    const user = JSON.parse(localStorage.getItem('user'));
+
+    async function loadProduits() {
+      try {
+        const response = await fetch('/api/boutique/produits');
+        const produits = await response.json();
+
+        let html = '';
+        produits.forEach(p => {
+          html += `
+            <div class="produit-card">
+              <h3>${p.nom}</h3>
+              <p>${p.description || 'Produit disponible'}</p>
+              <p class="prix"><strong>${p.prix}€</strong></p>
+              <button onclick="ajouterPanier(${p.id})" class="btn btn-primary">Ajouter au panier</button>
+            </div>
+          `;
+        });
+
+        document.getElementById('produits').innerHTML = html;
+      } catch (error) {
+        console.error('Erreur:', error);
+      }
+    }
+
+    function ajouterPanier(produit_id) {
+      if (!user) {
+        alert('Veuillez vous connecter!');
+        window.location.href = 'connexion.html';
+        return;
+      }
+
+      fetch('/api/boutique/panier/ajouter', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ user_id: user.id, produit_id, quantite: 1 })
+      }).then(r => r.json()).then(data => {
+        alert('✅ Produit ajouté au panier!');
+      });
+    }
+
+    loadProduits();
+  </script>
+</body>
+</html>

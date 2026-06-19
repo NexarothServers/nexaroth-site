@@ -1,0 +1,85 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Panier</title>
+  <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+  <nav class="navbar">
+    <div class="container">
+      <h1 class="logo">WebSite</h1>
+      <ul class="nav-links">
+        <li><a href="index.html">Accueil</a></li>
+        <li><a href="boutique.html">Boutique</a></li>
+      </ul>
+    </div>
+  </nav>
+
+  <section class="panier-section">
+    <div class="container">
+      <h2>🛒 Panier</h2>
+      <div id="panier-items"></div>
+      <div class="panier-footer">
+        <h3>Total: <span id="total">0€</span></h3>
+        <button onclick="checkout()" class="btn btn-primary">Passer la commande</button>
+      </div>
+    </div>
+  </section>
+
+  <script>
+    const user = JSON.parse(localStorage.getItem('user'));
+
+    async function loadPanier() {
+      if (!user) {
+        document.getElementById('panier-items').innerHTML = '<p>Veuillez vous connecter!</p>';
+        return;
+      }
+
+      try {
+        const response = await fetch(`/api/boutique/panier/${user.id}`);
+        const items = await response.json();
+
+        let html = '';
+        let total = 0;
+
+        items.forEach(item => {
+          total += item.total;
+          html += `
+            <div class="panier-item">
+              <p><strong>${item.nom}</strong></p>
+              <p>Prix: ${item.prix}€ x ${item.quantite} = ${item.total}€</p>
+            </div>
+          `;
+        });
+
+        document.getElementById('panier-items').innerHTML = html || '<p>Panier vide</p>';
+        document.getElementById('total').textContent = total + '€';
+      } catch (error) {
+        console.error('Erreur:', error);
+      }
+    }
+
+    function checkout() {
+      if (!user) {
+        alert('Veuillez vous connecter!');
+        return;
+      }
+
+      const total = document.getElementById('total').textContent.replace('€', '');
+
+      fetch('/api/boutique/checkout', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ user_id: user.id, total: parseFloat(total) })
+      }).then(r => r.json()).then(data => {
+        alert('✅ Commande confirmée!');
+        window.location.href = 'profil.html';
+      });
+    }
+
+    loadPanier();
+  </script>
+</body>
+</html>

@@ -1,0 +1,90 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Profil</title>
+  <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+  <nav class="navbar">
+    <div class="container">
+      <h1 class="logo">WebSite</h1>
+      <ul class="nav-links">
+        <li><a href="index.html">Accueil</a></li>
+        <li><a href="#" onclick="logout()">Déconnexion</a></li>
+      </ul>
+    </div>
+  </nav>
+
+  <section class="profil-section">
+    <div class="container">
+      <h2>👤 Mon Profil</h2>
+
+      <div class="profil-info">
+        <h3 id="username"></h3>
+        <p>Email: <span id="email"></span></p>
+        <p>Solde: <span id="solde"></span>€</p>
+        <p>Inscrit le: <span id="created_at"></span></p>
+      </div>
+
+      <h3>Historique des commandes</h3>
+      <div id="commandes"></div>
+    </div>
+  </section>
+
+  <script>
+    const user = JSON.parse(localStorage.getItem('user'));
+
+    if (!user) {
+      window.location.href = 'connexion.html';
+    }
+
+    async function loadProfil() {
+      try {
+        const response = await fetch(`/api/user/profil/${user.id}`);
+        const profil = await response.json();
+
+        document.getElementById('username').textContent = user.username;
+        document.getElementById('email').textContent = profil.email;
+        document.getElementById('solde').textContent = profil.solde;
+        document.getElementById('created_at').textContent = new Date(profil.created_at).toLocaleDateString('fr-FR');
+      } catch (error) {
+        console.error('Erreur:', error);
+      }
+    }
+
+    async function loadCommandes() {
+      try {
+        const response = await fetch(`/api/user/commandes/${user.id}`);
+        const commandes = await response.json();
+
+        let html = '';
+        commandes.forEach(c => {
+          html += `
+            <div class="commande-item">
+              <p>Commande #${c.id}</p>
+              <p>Total: ${c.total}€</p>
+              <p>Statut: ${c.statut}</p>
+              <p>Date: ${new Date(c.created_at).toLocaleDateString('fr-FR')}</p>
+            </div>
+          `;
+        });
+
+        document.getElementById('commandes').innerHTML = html || '<p>Aucune commande</p>';
+      } catch (error) {
+        console.error('Erreur:', error);
+      }
+    }
+
+    function logout() {
+      localStorage.removeItem('token');
+      localStorage.removeItem('user');
+      window.location.href = 'index.html';
+    }
+
+    loadProfil();
+    loadCommandes();
+  </script>
+</body>
+</html>

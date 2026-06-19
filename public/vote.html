@@ -1,0 +1,107 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Vote</title>
+  <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+  <nav class="navbar">
+    <div class="container">
+      <h1 class="logo">WebSite</h1>
+      <ul class="nav-links">
+        <li><a href="index.html">Accueil</a></li>
+        <li><a href="vote.html">Vote</a></li>
+        <li><a href="boutique.html">Boutique</a></li>
+      </ul>
+    </div>
+  </nav>
+
+  <section class="vote-section">
+    <div class="container">
+      <h2>🗳️ Système de Vote</h2>
+      <div class="vote-container">
+        <h3>Quel est votre avis?</h3>
+        <div id="options"></div>
+        <div id="message"></div>
+      </div>
+
+      <div class="resultats-container">
+        <h3>Résultats</h3>
+        <div id="resultats"></div>
+      </div>
+    </div>
+  </section>
+
+  <script>
+    const options = ['Option A', 'Option B', 'Option C', 'Option D'];
+    const user = JSON.parse(localStorage.getItem('user'));
+
+    // Afficher les options
+    const optionsDiv = document.getElementById('options');
+    options.forEach(opt => {
+      optionsDiv.innerHTML += `
+        <button class="vote-btn" onclick="voter('${opt}')">${opt}</button>
+      `;
+    });
+
+    // Voter
+    async function voter(option) {
+      if (!user) {
+        alert('Veuillez vous connecter!');
+        window.location.href = 'connexion.html';
+        return;
+      }
+
+      try {
+        const response = await fetch('/api/vote/voter', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ user_id: user.id, option })
+        });
+
+        const result = await response.json();
+        const messageDiv = document.getElementById('message');
+
+        if (response.ok) {
+          messageDiv.innerHTML = '<p class="success">✅ Vote enregistré!</p>';
+          loadResultats();
+        } else {
+          messageDiv.innerHTML = `<p class="error">❌ ${result.error}</p>`;
+        }
+      } catch (error) {
+        document.getElementById('message').innerHTML = `<p class="error">❌ Erreur: ${error.message}</p>`;
+      }
+    }
+
+    // Charger les résultats
+    async function loadResultats() {
+      try {
+        const response = await fetch('/api/vote/resultats');
+        const resultats = await response.json();
+
+        let html = '';
+        for (const [option, votes] of Object.entries(resultats)) {
+          const pourcentage = votes > 0 ? Math.round((votes / Object.values(resultats).reduce((a, b) => a + b, 1)) * 100) : 0;
+          html += `
+            <div class="resultat-item">
+              <p>${option}: <strong>${votes} votes</strong> (${pourcentage}%)</p>
+              <div class="progress-bar">
+                <div class="progress" style="width: ${pourcentage}%"></div>
+              </div>
+            </div>
+          `;
+        }
+
+        document.getElementById('resultats').innerHTML = html;
+      } catch (error) {
+        console.error('Erreur:', error);
+      }
+    }
+
+    loadResultats();
+    setInterval(loadResultats, 2000);
+  </script>
+</body>
+</html>
